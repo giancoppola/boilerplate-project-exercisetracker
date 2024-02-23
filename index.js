@@ -21,10 +21,10 @@ const userSchema = new mongoose.Schema({
 const User = new mongoose.model('User', userSchema);
 
 const exerciseSchema = new mongoose.Schema({
-  id: String,
-  description: String,
-  duration: Number,
-  date: String
+  id: { type: String},
+  description: {type: String},
+  duration: {type: Number},
+  date: {type: String, default: new Date().toDateString()}
 })
 const Exercise = new mongoose.model("Exercise", exerciseSchema);
 
@@ -66,16 +66,23 @@ app.route('/api/users/:_id/exercises')
   let desc = req.body.description;
   let duration = req.body.duration;
   let date = req.body.date;
-  if(id && desc && duration && date){
+  let user = await User.findById(id);
+  if(id && desc && duration){
     let exercise = new Exercise({
       id: id,
       description: desc,
       duration: duration,
-      date: new Date(date).toDateString()
+      date: date ? new Date(date).toDateString() :  new Date().toDateString()
     })
     try{
       await exercise.save()
-      res.json(exercise)
+      res.json({
+        username: user.username,
+        description: exercise.description,
+        duration: parseInt(exercise.duration),
+        date: exercise.date,
+        _id: user._id
+      })
     }
     catch(e){
       console.log(e);
@@ -108,14 +115,14 @@ app.route("/api/users/:_id/logs")
   if (id){
     try{
       let exercises = await Exercise.find({id: id})
-      .select('-id')
+      .select('-_id -id -__v')
       .limit(limit)
       .exec();
       let user = await User.findById(id);
       res.json({
+        _id: id,
         username: user.username,
         count: exercises.length,
-        _id: id,
         log: exercises
       })
     }
