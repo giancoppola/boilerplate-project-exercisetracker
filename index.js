@@ -28,9 +28,15 @@ const exerciseSchema = new mongoose.Schema({
 })
 const Exercise = new mongoose.model("Exercise", exerciseSchema);
 
+app.route("*")
+.get((req, res, next) => {
+  console.log(req.method, req.url, res.statusCode);
+  next();
+})
+
 // api/users route - POST and GET
 app.route("/api/users")
-.post(async (req, res) => {
+.post(async (req, res, next) => {
   let username = req.body.username;
   if (username){
     let user = new User({ username: username })
@@ -46,14 +52,16 @@ app.route("/api/users")
       return console.log(e);
     }
   }
+  next()
 })
-.get(async (req, res) => {
+.get(async (req, res, next) => {
   let users = await User.find();
   res.json(users);
+  next()
 })
 
 app.route('/api/users/:_id/exercises')
-.post(async (req, res) => {
+.post(async (req, res, next) => {
   let id = req.params._id;
   let desc = req.body.description;
   let duration = req.body.duration;
@@ -73,8 +81,9 @@ app.route('/api/users/:_id/exercises')
       console.log(e);
     }
   }
+  next()
 })
-.get(async (req, res) => {
+.get(async (req, res, next) => {
   let id = req.params._id;
   if(id){
     try{
@@ -85,6 +94,37 @@ app.route('/api/users/:_id/exercises')
       console.log(e);
     }
   }
+  next()
+})
+
+app.get('api/users/:_id/logs?from&to&limit', (req, res) => { res.send("huh")})
+
+
+// http://localhost:3000/api/users/65d8d232886dff8d77f97c9a/logs
+app.route("api/users/:_id/logs?from&to&limit")
+.get(async (req, res, next) => {
+  res.send("test");
+  console.log('get');
+  let id = req.params._id;
+  let from = req.query.from;
+  let to = req.query.to;
+  let limit = req.query.limit;
+  if (id){
+    try{
+      let exercises = await Exercise.find({id: id}).select('-id').exec();
+      let user = await User.findById(id);
+      res.json({
+        username: user.username,
+        count: exercises.length,
+        _id: id,
+        log: exercises
+      })
+    }
+    catch(e){
+      console.log(e);
+    }
+  }
+  next();
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
