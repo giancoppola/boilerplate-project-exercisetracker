@@ -71,7 +71,7 @@ app.route('/api/users/:_id/exercises')
       id: id,
       description: desc,
       duration: duration,
-      date: date
+      date: new Date(date).toDateString()
     })
     try{
       await exercise.save()
@@ -97,21 +97,20 @@ app.route('/api/users/:_id/exercises')
   next()
 })
 
-app.get('api/users/:_id/logs?from&to&limit', (req, res) => { res.send("huh")})
-
-
 // http://localhost:3000/api/users/65d8d232886dff8d77f97c9a/logs
-app.route("api/users/:_id/logs?from&to&limit")
+app.route("/api/users/:_id/logs")
 .get(async (req, res, next) => {
-  res.send("test");
-  console.log('get');
+  console.log(req.query);
   let id = req.params._id;
   let from = req.query.from;
   let to = req.query.to;
-  let limit = req.query.limit;
+  let limit = parseInt(req.query.limit);
   if (id){
     try{
-      let exercises = await Exercise.find({id: id}).select('-id').exec();
+      let exercises = await Exercise.find({id: id})
+      .select('-id')
+      .limit(limit)
+      .exec();
       let user = await User.findById(id);
       res.json({
         username: user.username,
